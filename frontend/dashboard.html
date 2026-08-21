@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | CampusLoop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .dash-body { background: var(--paper); min-height: 100vh; font-family: 'Manrope', sans-serif; color: var(--ink); }
+
+        /* top bar */
+        .dash-topbar { background: var(--navy-deep); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; position: sticky; top: 0; z-index: 50; }
+        .dash-topbar .logo-row { display: flex; align-items: center; gap: 12px; }
+        .dash-topbar .logo-row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+        .dash-topbar .logo-row span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; }
+        .dash-topbar .user-area { display: flex; align-items: center; gap: 20px; }
+        .dash-topbar .user-area .user-name { font-size: 14px; font-weight: 600; }
+        .dash-topbar .user-area .role-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
+        .role-badge.student { background: rgba(46,125,79,0.2); color: #6FCF97; }
+        .role-badge.admin { background: rgba(227,166,60,0.2); color: var(--gold); }
+        .btn-logout { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-logout:hover { background: rgba(255,255,255,0.15); }
+
+        /* main */
+        .dash-main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+        .welcome-section { margin-bottom: 40px; }
+        .welcome-section h1 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin: 0 0 6px; color: var(--navy); }
+        .welcome-section p { color: var(--ink-soft); font-size: 15px; margin: 0; }
+
+        /* info card */
+        .info-card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 32px; }
+        .info-card h2 { font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 600; margin: 0 0 20px; color: var(--navy); }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .info-item { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+        .info-item .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); font-weight: 600; }
+        .info-item .value { font-size: 14px; font-weight: 600; color: var(--ink); word-break: break-all; overflow-wrap: break-word; }
+
+        /* stats */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background: #fff; border-radius: 14px; padding: 24px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid var(--line); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .stat-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--navy); }
+        .stat-card .stat-label { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+
+        /* quick actions */
+        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .action-btn { display: flex; align-items: center; gap: 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px 24px; cursor: pointer; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; text-decoration: none; color: var(--ink); font-family: 'Manrope', sans-serif; }
+        .action-btn:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(46,125,79,0.1); }
+        .action-btn .action-icon { font-size: 1.5rem; }
+        .action-btn .action-text { display: flex; flex-direction: column; }
+        .action-btn .action-text strong { font-size: 14px; font-weight: 700; }
+        .action-btn .action-text span { font-size: 12px; color: var(--ink-soft); }
+
+        /* loading */
+        .loading-overlay { display: flex; align-items: center; justify-content: center; min-height: 60vh; font-size: 16px; color: var(--ink-soft); }
+        .spinner { width: 36px; height: 36px; border: 3px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 18px; padding: 36px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 600; margin: 0 0 6px; color: var(--navy); }
+        .modal p.sub { font-size: 14px; color: var(--ink-soft); margin: 0 0 24px; }
+        .modal label { font-size: 12.5px; font-weight: 700; color: var(--navy-deep); display: block; margin-bottom: 6px; }
+        .modal textarea, .modal input[type="text"] { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: border-color 0.15s; resize: vertical; box-sizing: border-box; }
+        .modal textarea:focus, .modal input[type="text"]:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,79,0.14); }
+        .modal textarea { min-height: 100px; }
+        .modal .field-group { margin-bottom: 18px; }
+
+        /* image upload area */
+        .upload-area { border: 2px dashed var(--line); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
+        .upload-area:hover { border-color: var(--green); background: rgba(46,125,79,0.03); }
+        .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-area .upload-label { font-size: 14px; color: var(--ink-soft); font-weight: 600; }
+        .upload-area .upload-label strong { color: var(--green); }
+        .img-preview { max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 12px; object-fit: contain; display: none; }
+
+        /* buttons */
+        .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-submit { background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: background 0.15s; }
+        .btn-submit:hover { background: var(--green-dark); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-cancel { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 28px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; }
+
+        /* complaint cards */
+        .complaints-list { display: flex; flex-direction: column; gap: 20px; }
+        .complaint-card { background: #fff; border-radius: 14px; border: 1px solid var(--line); padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .complaint-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .complaint-header .reporter { font-size: 13px; color: var(--ink-soft); }
+        .complaint-header .reporter strong { color: var(--ink); }
+        .status-badge { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+        .status-badge.pending { background: #FFF3E0; color: #E65100; }
+        .status-badge.fixed { background: #E8F5E9; color: #2E7D32; }
+        .complaint-desc { font-size: 15px; line-height: 1.6; color: var(--ink); margin-bottom: 14px; }
+        .complaint-img { max-width: 100%; max-height: 300px; border-radius: 10px; object-fit: contain; margin-bottom: 14px; }
+        .complaint-date { font-size: 12px; color: var(--ink-soft); }
+        .complaint-fix { background: #F1F8E9; border-radius: 10px; padding: 16px; margin-top: 14px; }
+        .complaint-fix h4 { font-size: 13px; font-weight: 700; color: #2E7D32; margin: 0 0 8px; }
+        .complaint-fix p { font-size: 13px; color: var(--ink); margin: 0 0 10px; }
+        .complaint-fix img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
+
+        /* admin resolve button */
+        .btn-resolve { background: var(--navy); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; transition: background 0.2s; }
+        .btn-resolve:hover { background: var(--navy-deep); }
+
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--ink-soft); }
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state p { font-size: 15px; }
+
+        @media (max-width: 680px) {
+            .dash-topbar { padding: 12px 16px; }
+            .dash-main { padding: 24px 16px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body class="dash-body">
+
+    <!-- TOP BAR -->
+    <header class="dash-topbar">
+        <div class="logo-row">
+            <img src="https://siesgst.edu.in/images/sies_gst_logonew.jpg" alt="SIES GST">
+            <span>CampusLoop</span>
+        </div>
+        <div class="user-area" id="userArea" style="display:none;">
+            <span class="role-badge" id="roleBadge"></span>
+            <span class="user-name" id="topName"></span>
+            <button class="btn-logout" id="btnLogout">Log out</button>
+        </div>
+    </header>
+
+    <!-- LOADING -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        Loading your dashboard...
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="dash-main" id="dashMain" style="display:none;">
+
+        <div class="welcome-section">
+            <h1 id="welcomeHeading">Welcome back!</h1>
+            <p>Here's your CampusLoop overview.</p>
+        </div>
+
+        <!-- Profile -->
+        <div class="info-card">
+            <h2>Your Profile</h2>
+            <div class="info-grid">
+                <div class="info-item"><span class="label">Name</span><span class="value" id="infoName">-</span></div>
+                <div class="info-item"><span class="label">Email</span><span class="value" id="infoEmail">-</span></div>
+                <div class="info-item"><span class="label">Department</span><span class="value" id="infoDept">-</span></div>
+                <div class="info-item"><span class="label">Year</span><span class="value" id="infoYear">-</span></div>
+            </div>
+        </div>
+
+        <!-- Live Stats -->
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total Reports</div></div>
+            <div class="stat-card"><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
+            <div class="stat-card"><div class="stat-num" id="statFixed">0</div><div class="stat-label">Resolved</div></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="info-card">
+            <h2>Quick Actions</h2>
+            <div class="quick-actions">
+                <button class="action-btn" id="btnReport" style="display:none;">
+                    <span class="action-icon">📸</span>
+                    <div class="action-text"><strong>Report a Problem</strong><span>Upload photo &amp; describe</span></div>
+                </button>
+                <button class="action-btn" id="btnViewReports">
+                    <span class="action-icon">📋</span>
+                    <div class="action-text"><strong id="viewReportsLabel">My Reports</strong><span id="viewReportsDesc">Check your submitted reports</span></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="info-card" id="reportsSection" style="display:none;">
+            <h2 id="reportsSectionTitle">My Reports</h2>
+            <div class="complaints-list" id="complaintsList"></div>
+        </div>
+
+    </main>
+
+    <!-- REPORT MODAL -->
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal">
+            <h2>Report a Problem</h2>
+            <p class="sub">Upload a photo and describe the issue. Our admin team will review it.</p>
+            <div class="field-group">
+                <label>Photo</label>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" accept="image/*" id="reportImage">
+                    <div class="upload-label"><strong>Click to upload</strong> or drag a photo here</div>
+                    <img class="img-preview" id="reportPreview">
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Description</label>
+                <textarea id="reportDesc" placeholder="Describe the problem you found..."></textarea>
+            </div>
+            <div class="btn-row">
+                <button class="btn-submit" id="btnSubmitReport">Submit Report</button>
+                <button class="btn-cancel" id="btnCancelReport">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESOLVE MODAL (admin) -->
+    <div class="modal-overlay" id="resolveModal">
+        <div class="modal">
+            <h2>Mark as Fixed</h2>
+            <p class="sub">Upload a photo of the fix and add a note.</p>
+            <input type="hidden" id="resolveComplaintId">
+            <div class="field-group">
+                <label>Fix Photo (required)</label>
+                <div class="upload-area" id="fixUploadArea">
+                    <input type="file" accept="image/*" id="fixImage">
+                    <div class="upload-label"><strong>Click to upload</strong> fix photo</div>
+                    <img class="img-preview" id="fixPreview">
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Note (optional)</label>
+                <textarea id="fixNote" placeholder="e.g. Cleaned and repaired on 21 Aug"></textarea>
+            </div>
+            <div class="btn-row">
+                <button class="btn-submit" id="btnSubmitResolve">Mark as Fixed</button>
+                <button class="btn-cancel" id="btnCancelResolve">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

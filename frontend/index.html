@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusLoop | SIES GST</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── landing-page specific styles ── */
+        .landing-body {
+            background: var(--navy-deep);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .landing-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 48px;
+        }
+
+        .landing-nav .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .landing-nav .logo-row img {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .landing-nav .logo-row span {
+            font-family: 'Fraunces', serif;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        .landing-nav .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .landing-nav .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .landing-nav .nav-links a:hover {
+            color: #fff;
+        }
+
+        .landing-nav .nav-links .btn-login {
+            background: var(--green);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .landing-nav .nav-links .btn-login:hover {
+            background: var(--green-dark);
+            transform: translateY(-1px);
+        }
+
+        /* hero */
+        .landing-hero {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing-hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(46, 125, 79, 0.15) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            max-width: 680px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 16px;
+        }
+
+        .hero-content h1 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(2.4rem, 5vw, 3.6rem);
+            font-weight: 700;
+            line-height: 1.15;
+            margin: 0 0 20px;
+        }
+
+        .hero-content h1 em {
+            color: var(--green);
+            font-style: normal;
+        }
+
+        .hero-content p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0 0 36px;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-btns .btn-primary {
+            background: var(--green);
+            color: #fff;
+            padding: 14px 36px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .hero-btns .btn-primary:hover {
+            background: var(--green-dark);
+            transform: translateY(-2px);
+        }
+
+        .hero-btns .btn-outline {
+            background: transparent;
+            color: #fff;
+            padding: 14px 36px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+
+        .hero-btns .btn-outline:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* features */
+        .landing-features {
+            background: var(--navy);
+            padding: 80px 48px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 32px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 32px 28px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(46, 125, 79, 0.4);
+        }
+
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 0 0 8px;
+            color: #fff;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* footer */
+        .landing-footer {
+            text-align: center;
+            padding: 32px 24px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            background: var(--navy-deep);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        @media (max-width: 680px) {
+            .landing-nav {
+                padding: 16px 20px;
+            }
+
+            .landing-nav .nav-links a:not(.btn-login) {
+                display: none;
+            }
+
+            .landing-features {
+                padding: 48px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body class="landing-body">
+
+    <!-- NAV -->
+    <nav class="landing-nav">
+        <div class="logo-row">
+            <img src="https://siesgst.edu.in/images/sies_gst_logonew.jpg" alt="SIES GST">
+            <span>CampusLoop</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="login.html" class="btn-login">Log in</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="landing-hero">
+        <div class="hero-content">
+            <div class="eyebrow">— A Campus Initiative —</div>
+            <h1>Keep it clean.<br>Keep it <em>found</em>.</h1>
+            <p>CampusLoop is SIES GST's student-run hub for cleanliness drives and lost &amp; found — report a mess,
+                claim a misplaced item, and help keep campus life running smoothly.</p>
+            <div class="hero-btns">
+                <a href="login.html" class="btn-primary">Get Started</a>
+                <a href="#features" class="btn-outline">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="landing-features" id="features">
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">🧹</div>
+                <h3>Cleanliness Drives</h3>
+                <p>Organize and log campus cleanliness drives. Track participation and impact across all floors.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📦</div>
+                <h3>Lost &amp; Found</h3>
+                <p>Report a lost item or claim a found one. Reunite belongings with their owners effortlessly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>Track Progress</h3>
+                <p>Real-time dashboards for drives logged, items reunited, and floors covered across campus.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="landing-footer">
+        &copy; 2026 SIES Graduate School of Technology &middot; Student Council
+    </footer>
+
+</body>
+
+</html>
