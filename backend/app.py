@@ -105,6 +105,7 @@ def login():
     data = request.get_json()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
+    expected_role = data.get("role")  # student or admin
 
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
@@ -115,6 +116,12 @@ def login():
 
     if not user:
         return jsonify({"error": "No account found. Please sign up first."}), 404
+
+    if expected_role and user["role"] != expected_role:
+        if expected_role == "admin":
+            return jsonify({"error": "No admin account found with this email."}), 403
+        else:
+            return jsonify({"error": "This is an admin account. Please use the Admin tab."}), 403
 
     if not check_password_hash(user["password_hash"], password):
         return jsonify({"error": "Incorrect password."}), 401
@@ -172,19 +179,14 @@ def logout():
 @app.route("/api/stats", methods=["GET"])
 def stats():
     user_id = session.get("user_id")
-    role = session.get("role")
     if not user_id:
         return jsonify({"error": "Not authenticated."}), 401
 
     conn = get_db()
-    if role == "admin":
-        total = conn.execute("SELECT COUNT(*) as c FROM complaints").fetchone()["c"]
-        pending = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='pending'").fetchone()["c"]
-        fixed = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='fixed'").fetchone()["c"]
-    else:
-        total = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE user_id=?", (user_id,)).fetchone()["c"]
-        pending = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE user_id=? AND status='pending'", (user_id,)).fetchone()["c"]
-        fixed = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE user_id=? AND status='fixed'", (user_id,)).fetchone()["c"]
+    # Everyone sees global stats now
+    total = conn.execute("SELECT COUNT(*) as c FROM complaints").fetchone()["c"]
+    pending = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='pending'").fetchone()["c"]
+    fixed = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='fixed'").fetchone()["c"]
     conn.close()
 
     return jsonify({"total": total, "pending": pending, "fixed": fixed}), 200
@@ -224,16 +226,11 @@ def list_complaints():
         return jsonify({"error": "Not authenticated."}), 401
 
     conn = get_db()
-    if role == "admin":
-        rows = conn.execute(
-            "SELECT c.*, u.name as reporter_name, u.email as reporter_email, u.department as reporter_dept "
-            "FROM complaints c JOIN users u ON c.user_id = u.id ORDER BY c.created_at DESC"
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM complaints WHERE user_id = ? ORDER BY created_at DESC",
-            (user_id,),
-        ).fetchall()
+    # Everyone sees all complaints
+    rows = conn.execute(
+        "SELECT c.*, u.name as reporter_name, u.email as reporter_email, u.department as reporter_dept "
+        "FROM complaints c JOIN users u ON c.user_id = u.id ORDER BY c.created_at DESC"
+    ).fetchall()
     conn.close()
 
     complaints = []

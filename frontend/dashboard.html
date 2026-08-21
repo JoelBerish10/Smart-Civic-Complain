@@ -179,14 +179,14 @@
                 </button>
                 <button class="action-btn" id="btnViewReports">
                     <span class="action-icon">📋</span>
-                    <div class="action-text"><strong id="viewReportsLabel">My Reports</strong><span id="viewReportsDesc">Check your submitted reports</span></div>
+                    <div class="action-text"><strong id="viewReportsLabel">All Reports</strong><span id="viewReportsDesc">View all reported campus issues</span></div>
                 </button>
             </div>
         </div>
 
         <!-- Reports Section -->
         <div class="info-card" id="reportsSection" style="display:none;">
-            <h2 id="reportsSectionTitle">My Reports</h2>
+            <h2 id="reportsSectionTitle">All Reports</h2>
             <div class="complaints-list" id="complaintsList"></div>
         </div>
 
@@ -219,14 +219,14 @@
     <!-- RESOLVE MODAL (admin) -->
     <div class="modal-overlay" id="resolveModal">
         <div class="modal">
-            <h2>Mark as Fixed</h2>
-            <p class="sub">Upload a photo of the fix and add a note.</p>
+            <h2>Complete & Remove Request</h2>
+            <p class="sub">Upload a photo of the completed task to remove this pending request.</p>
             <input type="hidden" id="resolveComplaintId">
             <div class="field-group">
-                <label>Fix Photo (required)</label>
+                <label>Completed Task Photo (required)</label>
                 <div class="upload-area" id="fixUploadArea">
                     <input type="file" accept="image/*" id="fixImage">
-                    <div class="upload-label"><strong>Click to upload</strong> fix photo</div>
+                    <div class="upload-label"><strong>Click to upload</strong> completed photo</div>
                     <img class="img-preview" id="fixPreview">
                 </div>
             </div>
@@ -235,7 +235,7 @@
                 <textarea id="fixNote" placeholder="e.g. Cleaned and repaired on 21 Aug"></textarea>
             </div>
             <div class="btn-row">
-                <button class="btn-submit" id="btnSubmitResolve">Mark as Fixed</button>
+                <button class="btn-submit" id="btnSubmitResolve">Upload & Remove Request</button>
                 <button class="btn-cancel" id="btnCancelResolve">Cancel</button>
             </div>
         </div>

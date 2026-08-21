@@ -34,9 +34,6 @@
 
             // role-based UI
             if (currentUser.role === 'admin') {
-                document.getElementById('viewReportsLabel').textContent = 'All Reports';
-                document.getElementById('viewReportsDesc').textContent = 'Review all student complaints';
-                document.getElementById('reportsSectionTitle').textContent = 'All Reports';
                 // admins don't report, they review
                 document.getElementById('btnReport').style.display = 'none';
             } else {
@@ -44,6 +41,11 @@
             }
 
             loadStats();
+            
+            // Automatically load reports when dashboard opens
+            const section = document.getElementById('reportsSection');
+            section.style.display = 'block';
+            loadComplaints();
         })
         .catch(() => {
             window.location.href = 'login.html';
@@ -100,7 +102,7 @@
             });
 
             let reporterInfo = '';
-            if (isAdmin && c.reporter_name) {
+            if (c.reporter_name) {
                 reporterInfo = '<div class="reporter">Reported by <strong>' + escHtml(c.reporter_name) + '</strong> (' + escHtml(c.reporter_email) + ') &middot; ' + escHtml(c.reporter_dept || '') + '</div>';
             }
 
@@ -119,7 +121,7 @@
 
             let resolveBtn = '';
             if (isAdmin && c.status === 'pending') {
-                resolveBtn = '<button class="btn-resolve" data-id="' + c.id + '">Upload Fix &amp; Resolve</button>';
+                resolveBtn = '<button class="btn-resolve" data-id="' + c.id + '">Upload completed pic & remove request</button>';
             }
 
             return '<div class="complaint-card">' +
@@ -257,13 +259,13 @@
             .then(() => {
                 resolveModal.classList.remove('active');
                 btn.disabled = false;
-                btn.textContent = 'Mark as Fixed';
+                btn.textContent = 'Upload & Remove Request';
                 loadStats();
                 loadComplaints();
             })
             .catch(() => {
                 btn.disabled = false;
-                btn.textContent = 'Mark as Fixed';
+                btn.textContent = 'Upload & Remove Request';
                 alert('Failed to resolve. Please try again.');
             });
     });

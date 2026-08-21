@@ -90,7 +90,7 @@ document.getElementById('formStudentLogin').addEventListener('submit', async e =
     setErr(pwField, !pwVal);
     if (!idVal || !pwVal) return;
 
-    const { ok, data } = await apiCall('/api/login', { email: idVal, password: pwVal });
+    const { ok, data } = await apiCall('/api/login', { email: idVal, password: pwVal, role: 'student' });
 
     if (!ok) {
         if (data.error && data.error.includes('No account')) {
@@ -156,7 +156,7 @@ document.getElementById('formAdminLogin').addEventListener('submit', async e => 
     setErr(pwField, !pwVal);
     if (!idVal || !pwVal) return;
 
-    const { ok, data } = await apiCall('/api/login', { email: idVal, password: pwVal });
+    const { ok, data } = await apiCall('/api/login', { email: idVal, password: pwVal, role: 'admin' });
 
     if (!ok) {
         if (data.error && data.error.includes('No account')) {
