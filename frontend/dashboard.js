@@ -41,7 +41,7 @@
             }
 
             loadStats();
-            
+
             // Automatically load reports when dashboard opens
             const section = document.getElementById('reportsSection');
             section.style.display = 'block';
