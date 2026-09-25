@@ -113,7 +113,6 @@ h1.title {
 h1.title em {
     font-style: normal;
     color: var(--green);
-    background: linear-gradient(transparent 62%, rgba(46, 125, 79, .35) 0);
 }
 .sub {
     font-size: 15.5px;
