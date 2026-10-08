@@ -36,3 +36,16 @@ CREATE TABLE IF NOT EXISTS complaints (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (resolved_by) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS lost_found (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('Lost', 'Found')),
+    item_name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    location TEXT NOT NULL,
+    item_date TEXT NOT NULL,
+    image_data TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);

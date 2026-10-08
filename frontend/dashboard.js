@@ -38,6 +38,7 @@
             } else {
                 document.getElementById('btnReport').style.display = 'flex';
             }
+            document.getElementById('btnReportLostFound').style.display = 'block';
 
             loadStats();
 
@@ -71,7 +72,20 @@
         const section = document.getElementById('reportsSection');
         if (section.style.display === 'none') {
             section.style.display = 'block';
+            document.getElementById('lostFoundSection').style.display = 'none';
             loadComplaints();
+            section.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            section.style.display = 'none';
+        }
+    });
+
+    document.getElementById('btnLostFoundAction').addEventListener('click', () => {
+        const section = document.getElementById('lostFoundSection');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            document.getElementById('reportsSection').style.display = 'none';
+            loadLostFound();
             section.scrollIntoView({ behavior: 'smooth' });
         } else {
             section.style.display = 'none';
@@ -424,8 +438,148 @@
             });
     });
 
+    // -- lost & found --------------------------------------------------------
+    function loadLostFound() {
+        fetch(API + '/api/lost_found', { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('lostFoundList');
+                if (!data.items || !data.items.length) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No items reported yet.</p></div>';
+                    return;
+                }
+                container.innerHTML = data.items.map(item => {
+                    const date = new Date(item.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+                    const badgeColor = item.type === 'Lost' ? '#E65100' : '#2E7D32';
+                    const badgeBg = item.type === 'Lost' ? '#FFF3E0' : '#E8F5E9';
+                    let imgHtml = item.image_data ? `<img class="complaint-img" src="${item.image_data}" alt="Item photo">` : '';
+                    
+                    return `
+                        <div class="complaint-card">
+                            <div class="complaint-header">
+                                <div>
+                                    <div class="reporter">Reported by <strong>${escHtml(item.reporter_name)}</strong> (${escHtml(item.reporter_email)})</div>
+                                    <div class="complaint-date">${date}</div>
+                                </div>
+                                <span class="status-badge" style="background:${badgeBg}; color:${badgeColor};">${item.type}</span>
+                            </div>
+                            <div style="font-size: 15px; color: var(--ink); margin-bottom: 8px;">
+                                <strong>Item:</strong> ${escHtml(item.item_name)} <br>
+                                <strong>Location:</strong> ${escHtml(item.location)} <br>
+                                <strong>Date of incident:</strong> ${escHtml(item.item_date)}
+                            </div>
+                            <div class="complaint-desc">
+                                <strong>Description:</strong> ${escHtml(item.description)}
+                            </div>
+                            ${imgHtml}
+                        </div>`;
+                }).join('');
+            });
+    }
+
+    const lfModal = document.getElementById('lfModal');
+    const lfImage = document.getElementById('lfImage');
+    const lfPreview = document.getElementById('lfPreview');
+    let lfImageData = null;
+
+    document.getElementById('btnReportLostFound').addEventListener('click', () => {
+        lfModal.classList.add('active');
+        lfImageData = null;
+        lfPreview.style.display = 'none';
+        
+        document.getElementById('lfStep1').style.display = 'block';
+        document.getElementById('lfStep2').style.display = 'none';
+
+        document.getElementById('lfType').value = '';
+        document.getElementById('lfName').value = '';
+        document.getElementById('lfLocation').value = '';
+        document.getElementById('lfDate').value = '';
+        document.getElementById('lfDesc').value = '';
+        lfImage.value = '';
+    });
+
+    document.getElementById('btnSelectLost').addEventListener('click', () => {
+        document.getElementById('lfType').value = 'Lost';
+        document.getElementById('lfStep2Title').textContent = 'Reporting a Lost Item';
+        document.getElementById('lfStep1').style.display = 'none';
+        document.getElementById('lfStep2').style.display = 'block';
+    });
+
+    document.getElementById('btnSelectFound').addEventListener('click', () => {
+        document.getElementById('lfType').value = 'Found';
+        document.getElementById('lfStep2Title').textContent = 'Reporting a Found Item';
+        document.getElementById('lfStep1').style.display = 'none';
+        document.getElementById('lfStep2').style.display = 'block';
+    });
+
+    document.getElementById('btnCancelLFStep1').addEventListener('click', () => {
+        lfModal.classList.remove('active');
+    });
+
+    document.getElementById('btnBackLF').addEventListener('click', () => {
+        document.getElementById('lfStep2').style.display = 'none';
+        document.getElementById('lfStep1').style.display = 'block';
+    });
+
+    lfImage.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            lfImageData = ev.target.result;
+            lfPreview.src = lfImageData;
+            lfPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btnSubmitLF').addEventListener('click', () => {
+        const payload = {
+            type: document.getElementById('lfType').value,
+            item_name: document.getElementById('lfName').value.trim(),
+            location: document.getElementById('lfLocation').value.trim(),
+            item_date: document.getElementById('lfDate').value,
+            description: document.getElementById('lfDesc').value.trim(),
+            image_data: lfImageData
+        };
+
+        if (!payload.item_name || !payload.location || !payload.item_date || !payload.description) {
+            alert('Please fill all required fields.'); 
+            return; 
+        }
+
+        const btn = document.getElementById('btnSubmitLF');
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        fetch(API + '/api/lost_found', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        })
+        .then(async r => {
+            const res = await r.json();
+            if(!r.ok) throw new Error(res.error || 'Failed');
+            return res;
+        })
+        .then(() => {
+            lfModal.classList.remove('active');
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+            loadLostFound();
+        })
+        .catch((e) => {
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+            alert(e.message);
+        });
+    });
+
     // close modals on overlay click
-    [reportModal, resolveModal, removeModal, mapModal].forEach(modal => {
+    [reportModal, resolveModal, removeModal, mapModal, lfModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');
         });

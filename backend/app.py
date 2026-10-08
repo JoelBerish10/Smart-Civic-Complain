@@ -211,8 +211,8 @@ def stats():
     conn = get_db()
     # Everyone sees global stats now
     total = conn.execute("SELECT COUNT(*) as c FROM complaints").fetchone()["c"]
-    pending = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='pending'").fetchone()["c"]
-    fixed = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='fixed'").fetchone()["c"]
+    pending = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status NOT IN ('RESOLVED', 'REMOVED')").fetchone()["c"]
+    fixed = conn.execute("SELECT COUNT(*) as c FROM complaints WHERE status='RESOLVED'").fetchone()["c"]
     conn.close()
 
     return jsonify({"total": total, "pending": pending, "fixed": fixed}), 200
@@ -494,6 +494,61 @@ def resolve_complaint(complaint_id):
     conn.close()
 
     return jsonify({"message": "Complaint marked as fixed."}), 200
+
+
+# -- API: lost & found -------------------------------------------------------
+@app.route("/api/lost_found", methods=["GET"])
+def list_lost_found():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT lf.*, u.name as reporter_name, u.email as reporter_email "
+        "FROM lost_found lf JOIN users u ON lf.user_id = u.id ORDER BY lf.created_at DESC"
+    ).fetchall()
+    conn.close()
+    
+    items = []
+    for r in rows:
+        items.append({
+            "id": r["id"],
+            "user_id": r["user_id"],
+            "type": r["type"],
+            "item_name": r["item_name"],
+            "description": r["description"],
+            "location": r["location"],
+            "item_date": r["item_date"],
+            "image_data": r["image_data"],
+            "created_at": r["created_at"],
+            "reporter_name": r["reporter_name"],
+            "reporter_email": r["reporter_email"]
+        })
+    return jsonify({"items": items}), 200
+
+@app.route("/api/lost_found", methods=["POST"])
+def create_lost_found():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Not authenticated."}), 401
+
+    data = request.get_json()
+    item_type = data.get("type")
+    item_name = data.get("item_name")
+    description = data.get("description")
+    location = data.get("location")
+    item_date = data.get("item_date")
+    image_data = data.get("image_data")
+
+    if not item_type or not item_name or not description or not location or not item_date:
+        return jsonify({"error": "All required fields are missing."}), 400
+
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO lost_found (user_id, type, item_name, description, location, item_date, image_data) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (user_id, item_type, item_name, description, location, item_date, image_data),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Item reported successfully."}), 201
 
 
 # -- run ---------------------------------------------------------------------

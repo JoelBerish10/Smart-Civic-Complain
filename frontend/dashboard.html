@@ -187,11 +187,24 @@
                     <span class="action-icon">📸</span>
                     <div class="action-text"><strong>Report a Problem</strong><span>Upload photo &amp; describe</span></div>
                 </button>
+                <button class="action-btn" id="btnLostFoundAction">
+                    <span class="action-icon">📦</span>
+                    <div class="action-text"><strong>Lost &amp; Found</strong><span>Report or find items</span></div>
+                </button>
                 <button class="action-btn" id="btnViewReports">
                     <span class="action-icon">📋</span>
                     <div class="action-text"><strong id="viewReportsLabel">All Reports</strong><span id="viewReportsDesc">View all reported campus issues</span></div>
                 </button>
             </div>
+        </div>
+
+        <!-- Lost & Found Section -->
+        <div class="info-card" id="lostFoundSection" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">Lost &amp; Found</h2>
+                <button class="btn-submit" id="btnReportLostFound" style="display:none; padding:8px 16px;">Report Item</button>
+            </div>
+            <div class="complaints-list" id="lostFoundList"></div>
         </div>
 
         <!-- Reports Section -->
@@ -265,6 +278,62 @@
         </div>
     </div>
     
+    <!-- LOST & FOUND MODAL -->
+    <div class="modal-overlay" id="lfModal">
+        <div class="modal">
+            <h2>Report Lost/Found Item</h2>
+            
+            <div id="lfStep1">
+                <p class="sub">What do you want to report?</p>
+                <div style="display:flex; gap:16px; margin-bottom:24px; margin-top: 16px;">
+                    <button id="btnSelectLost" style="flex:1; padding:24px; border:2px solid #E65100; border-radius:12px; background:#FFF3E0; color:#E65100; font-weight:700; font-size:16px; cursor:pointer; font-family:'Manrope',sans-serif; transition:all 0.2s;">
+                        <span style="font-size:24px; display:block; margin-bottom:8px;">🔴</span> Lost Item
+                    </button>
+                    <button id="btnSelectFound" style="flex:1; padding:24px; border:2px solid #2E7D32; border-radius:12px; background:#E8F5E9; color:#2E7D32; font-weight:700; font-size:16px; cursor:pointer; font-family:'Manrope',sans-serif; transition:all 0.2s;">
+                        <span style="font-size:24px; display:block; margin-bottom:8px;">🟢</span> Found Item
+                    </button>
+                </div>
+                <div class="btn-row" style="justify-content: flex-end;">
+                    <button class="btn-cancel" id="btnCancelLFStep1">Cancel</button>
+                </div>
+            </div>
+
+            <div id="lfStep2" style="display:none;">
+                <p class="sub" id="lfStep2Title">Reporting...</p>
+                <input type="hidden" id="lfType">
+                <div class="field-group">
+                    <label>Item Name/Title</label>
+                    <input type="text" id="lfName" placeholder="e.g. Blue Water Bottle">
+                </div>
+                <div class="field-group">
+                    <label>Location</label>
+                    <input type="text" id="lfLocation" placeholder="e.g. Library 3rd Floor">
+                </div>
+                <div class="field-group">
+                    <label>Date</label>
+                    <input type="date" id="lfDate" style="width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); outline: none; box-sizing: border-box;">
+                </div>
+                <div class="field-group">
+                    <label>Description</label>
+                    <textarea id="lfDesc" placeholder="e.g. Has a sticker of Batman..."></textarea>
+                </div>
+                <div class="field-group">
+                    <label>Photo (Optional)</label>
+                    <div class="upload-area" id="lfUploadArea">
+                        <input type="file" accept="image/*" capture="environment" id="lfImage">
+                        <div class="upload-label"><strong>Tap to open camera</strong> or upload photo</div>
+                        <img class="img-preview" id="lfPreview">
+                    </div>
+                </div>
+                
+                <div class="btn-row">
+                    <button class="btn-cancel" id="btnBackLF">Back</button>
+                    <button class="btn-submit" id="btnSubmitLF">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MAP MODAL -->
     <div class="modal-overlay" id="mapModal">
         <div class="modal">
