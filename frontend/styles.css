@@ -1,16 +1,16 @@
 /* Extracted CSS from login.html */
 :root {
-    --navy: #0F2C4C;
-    --navy-deep: #081B30;
-    --green: #2E7D4F;
-    --green-dark: #1F5E3A;
-    --gold: #E3A63C;
-    --paper: #F6F8F4;
+    --navy: #047857;
+    --navy-deep: #022C22;
+    --green: #10B981;
+    --green-dark: #059669;
+    --gold: #FDE047;
+    --paper: #F9F6EE;
     --card: #FFFFFF;
-    --ink: #16241D;
-    --ink-soft: #55645B;
-    --line: #E1E7DE;
-    --danger: #C0433A;
+    --ink: #1F2937;
+    --ink-soft: #4B5563;
+    --line: #E5E7EB;
+    --danger: #EF4444;
 }
 
 * {
