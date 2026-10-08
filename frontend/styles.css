@@ -23,11 +23,27 @@ body {
     padding: 0;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Manrope', sans-serif;
     background: var(--paper);
     color: var(--ink);
     min-height: 100vh;
+    animation: fadeInPage 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .wrap {
@@ -304,7 +320,7 @@ form {
     font-size: 14px;
     color: var(--ink);
     outline: none;
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .field input:focus,
 .field select:focus {
@@ -361,10 +377,11 @@ form {
     font-size: 14.5px;
     letter-spacing: .01em;
     cursor: pointer;
-    transition: background .15s ease, transform .1s ease;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
 }
 .primary-btn:hover {
     background: var(--green-dark);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 .primary-btn:active {
     transform: scale(.99);

@@ -23,8 +23,8 @@
         .dash-topbar .user-area .role-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
         .role-badge.student { background: rgba(46,125,79,0.2); color: #6FCF97; }
         .role-badge.admin { background: rgba(227,166,60,0.2); color: var(--gold); }
-        .btn-logout { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-logout:hover { background: rgba(255,255,255,0.15); }
+        .btn-logout { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-logout:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
 
         /* main */
         .dash-main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
@@ -42,15 +42,15 @@
 
         /* stats */
         .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
-        .stat-card { background: #fff; border-radius: 14px; padding: 24px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid var(--line); transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card { background: #fff; border-radius: 14px; padding: 24px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--line); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.08); border-color: rgba(16, 185, 129, 0.2); }
         .stat-card .stat-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--navy); }
         .stat-card .stat-label { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
 
         /* quick actions */
         .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-        .action-btn { display: flex; align-items: center; gap: 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px 24px; cursor: pointer; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; text-decoration: none; color: var(--ink); font-family: 'Manrope', sans-serif; }
-        .action-btn:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(46,125,79,0.1); }
+        .action-btn { display: flex; align-items: center; gap: 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px 24px; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); text-decoration: none; color: var(--ink); font-family: 'Manrope', sans-serif; }
+        .action-btn:hover { border-color: var(--green); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15); }
         .action-btn .action-icon { font-size: 1.5rem; }
         .action-btn .action-text { display: flex; flex-direction: column; }
         .action-btn .action-text strong { font-size: 14px; font-weight: 700; }
