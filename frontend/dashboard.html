@@ -80,6 +80,12 @@
         .upload-area .upload-label { font-size: 14px; color: var(--ink-soft); font-weight: 600; }
         .upload-area .upload-label strong { color: var(--green); }
         .img-preview { max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 12px; object-fit: contain; display: none; }
+        
+        .modal select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: border-color 0.15s; box-sizing: border-box; }
+        .modal select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,79,0.14); }
+        .map-btn { width: 100%; background: #F4F6F8; border: 1.5px dashed var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; text-align: left; }
+        .map-btn:hover { border-color: var(--navy); background: #E9ECEF; }
+        #map { width: 100%; height: 300px; border-radius: 10px; background: #eee; }
 
         /* buttons */
         .btn-row { display: flex; gap: 12px; margin-top: 24px; }
@@ -106,8 +112,12 @@
         .complaint-fix img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
 
         /* admin resolve button */
-        .btn-resolve { background: var(--navy); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; transition: background 0.2s; }
-        .btn-resolve:hover { background: var(--navy-deep); }
+        .btn-resolve { background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; transition: background 0.2s; }
+        .btn-resolve:hover { background: var(--green-dark); }
+        .btn-remove { background: #E53935; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; margin-left: 8px; transition: background 0.2s; }
+        .btn-remove:hover { background: #C62828; }
+        .btn-edit { background: var(--navy); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; transition: background 0.2s; }
+        .btn-reopen { background: var(--gold); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; font-family: 'Manrope', sans-serif; margin-left: 8px; transition: background 0.2s; }
 
         .empty-state { text-align: center; padding: 48px 24px; color: var(--ink-soft); }
         .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
@@ -198,20 +208,100 @@
             <h2>Report a Problem</h2>
             <p class="sub">Upload a photo and describe the issue. Our admin team will review it.</p>
             <div class="field-group">
+                <label>Category</label>
+                <select id="reportCategory">
+                    <option value="">Select Category</option>
+                    <option>Garbage</option>
+                    <option>Water Leakage</option>
+                    <option>Electrical Issue</option>
+                    <option>Broken Infrastructure</option>
+                    <option>Road / Pothole</option>
+                    <option>Washroom Issue</option>
+                    <option>Cleanliness</option>
+                    <option>Safety Issue</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Location (Area / Landmark)</label>
+                <input type="text" id="reportLocation" placeholder="e.g. Canteen - Main Entrance">
+            </div>
+            <div class="field-group">
+                <label>Map Pin (Optional but helpful)</label>
+                <button class="map-btn" id="btnOpenMap">📍 Tap to set location on map</button>
+                <input type="hidden" id="reportLat">
+                <input type="hidden" id="reportLng">
+            </div>
+            <div class="field-group">
+                <label>Problem Description</label>
+                <textarea id="reportDesc" placeholder="e.g. Garbage overflowing from the bin..."></textarea>
+            </div>
+            <div class="field-group">
+                <label>Affected Area / Object</label>
+                <input type="text" id="reportObject" placeholder="e.g. Main garbage bin near entrance">
+            </div>
+            <div class="field-group">
+                <label>Severity</label>
+                <select id="reportSeverity">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+            <div class="field-group">
                 <label>Photo</label>
                 <div class="upload-area" id="uploadArea">
-                    <input type="file" accept="image/*" id="reportImage">
-                    <div class="upload-label"><strong>Click to upload</strong> or drag a photo here</div>
+                    <input type="file" accept="image/*" capture="environment" id="reportImage">
+                    <div class="upload-label"><strong>Tap to open camera</strong> or upload photo</div>
                     <img class="img-preview" id="reportPreview">
                 </div>
             </div>
-            <div class="field-group">
-                <label>Description</label>
-                <textarea id="reportDesc" placeholder="Describe the problem you found..."></textarea>
-            </div>
+            
             <div class="btn-row">
                 <button class="btn-submit" id="btnSubmitReport">Submit Report</button>
                 <button class="btn-cancel" id="btnCancelReport">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MAP MODAL -->
+    <div class="modal-overlay" id="mapModal">
+        <div class="modal">
+            <h2>Set Location</h2>
+            <p class="sub">Drag the pin to the approximate location inside SIES GST campus.</p>
+            <div id="map"></div>
+            <div class="btn-row">
+                <button class="btn-submit" id="btnSaveMap">Save Location</button>
+                <button class="btn-cancel" id="btnCancelMap">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- REMOVE MODAL (admin) -->
+    <div class="modal-overlay" id="removeModal">
+        <div class="modal">
+            <h2>Remove Request</h2>
+            <p class="sub">Select a reason for removing this request.</p>
+            <input type="hidden" id="removeComplaintId">
+            <div class="field-group">
+                <label>Reason</label>
+                <select id="removeReason">
+                    <option>Duplicate</option>
+                    <option>Invalid</option>
+                    <option>Test</option>
+                    <option>Inappropriate</option>
+                    <option>Incorrect report</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="field-group" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="removePenalty" style="width:auto;">
+                <label for="removePenalty" style="margin:0; font-size:13px; font-weight:500;">Apply -10 Trust Score penalty to user (spam/fake)</label>
+            </div>
+            <div class="btn-row">
+                <button class="btn-submit" style="background:#E53935;" id="btnSubmitRemove">Remove Request</button>
+                <button class="btn-cancel" id="btnCancelRemove">Cancel</button>
             </div>
         </div>
     </div>
@@ -219,14 +309,14 @@
     <!-- RESOLVE MODAL (admin) -->
     <div class="modal-overlay" id="resolveModal">
         <div class="modal">
-            <h2>Complete & Remove Request</h2>
-            <p class="sub">Upload a photo of the completed task to remove this pending request.</p>
+            <h2>Complete & Resolve Request</h2>
+            <p class="sub">Upload a photo of the completed task to resolve this pending request.</p>
             <input type="hidden" id="resolveComplaintId">
             <div class="field-group">
                 <label>Completed Task Photo (required)</label>
                 <div class="upload-area" id="fixUploadArea">
-                    <input type="file" accept="image/*" id="fixImage">
-                    <div class="upload-label"><strong>Click to upload</strong> completed photo</div>
+                    <input type="file" accept="image/*" capture="environment" id="fixImage">
+                    <div class="upload-label"><strong>Tap to open camera</strong> or upload photo</div>
                     <img class="img-preview" id="fixPreview">
                 </div>
             </div>
@@ -235,12 +325,57 @@
                 <textarea id="fixNote" placeholder="e.g. Cleaned and repaired on 21 Aug"></textarea>
             </div>
             <div class="btn-row">
-                <button class="btn-submit" id="btnSubmitResolve">Upload & Remove Request</button>
+                <button class="btn-submit" id="btnSubmitResolve">Upload & Resolve Request</button>
                 <button class="btn-cancel" id="btnCancelResolve">Cancel</button>
             </div>
         </div>
     </div>
 
+    <!-- Google Maps JS API (Replace YOUR_API_KEY with actual key if available, otherwise it works in dev mode) -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap"></script>
+    <script>
+        let map, marker;
+        function initMap() {
+            // SIES GST coordinates approx
+            const sies_gst = { lat: 19.0440, lng: 73.0240 };
+            
+            const mapOptions = {
+                center: sies_gst,
+                zoom: 18,
+                mapTypeId: 'satellite'
+            };
+            
+            // Map element check
+            const mapEl = document.getElementById('map');
+            if (!mapEl) return;
+            
+            map = new google.maps.Map(mapEl, mapOptions);
+            
+            // Draw SIES GST Polygon
+            const campusCoords = [
+                { lat: 19.0425, lng: 73.0225 },
+                { lat: 19.0455, lng: 73.0225 },
+                { lat: 19.0455, lng: 73.0255 },
+                { lat: 19.0425, lng: 73.0255 }
+            ];
+            
+            const campusPolygon = new google.maps.Polygon({
+                paths: campusCoords,
+                strokeColor: "#FF0000",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: "#FF0000",
+                fillOpacity: 0.15,
+            });
+            campusPolygon.setMap(map);
+            
+            marker = new google.maps.Marker({
+                position: sies_gst,
+                map: map,
+                draggable: true
+            });
+        }
+    </script>
     <script src="dashboard.js"></script>
 </body>
 

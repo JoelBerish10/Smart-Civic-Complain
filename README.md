@@ -40,4 +40,4 @@ Instead, open your web browser (Chrome, Edge, Safari, etc.) and go to:
 ### Default Admin Account
 To test the admin features (resolving complaints), you can log in with the auto-generated admin credentials:
 - **Email:** `admin@siesgst.edu.in`
-- **Password:** `admin123`
+- **Password:** `Admin@123`
