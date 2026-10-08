@@ -16,7 +16,7 @@
         /* top bar */
         .dash-topbar { background: var(--navy-deep); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; position: sticky; top: 0; z-index: 50; }
         .dash-topbar .logo-row { display: flex; align-items: center; gap: 12px; }
-        .dash-topbar .logo-row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+        .dash-topbar .logo-row img { height: 36px; width: auto; max-width: 140px; border-radius: 6px; object-fit: contain; background: #fff; padding: 2px; }
         .dash-topbar .logo-row span { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; }
         .dash-topbar .user-area { display: flex; align-items: center; gap: 20px; }
         .dash-topbar .user-area .user-name { font-size: 14px; font-weight: 600; }
@@ -137,11 +137,7 @@
     <!-- TOP BAR -->
     <header class="dash-topbar">
         <div class="logo-row">
-            <svg class="campus-logo" width="36" height="36" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="44" height="44" rx="12" fill="#047857"/>
-                <path d="M14 22a8 8 0 0 1 8-8h0a8 8 0 0 1 8 8v4a6 6 0 0 1-6 6h0a6 6 0 0 1-6-6v-4a2 2 0 0 0-2-2h0a2 2 0 0 0-2 2v2" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="30" cy="14" r="3" fill="#F9F6EE"/>
-            </svg>
+            <img src="https://siesgst.edu.in/images/sies_gst_logonew.jpg" alt="SIES GST Logo">
             <span>CampusLoop</span>
         </div>
         <div class="user-area" id="userArea" style="display:none;">
