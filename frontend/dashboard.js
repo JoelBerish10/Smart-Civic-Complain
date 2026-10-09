@@ -455,6 +455,7 @@
                     const badgeColor = item.type === 'Lost' ? '#E65100' : '#2E7D32';
                     const badgeBg = item.type === 'Lost' ? '#FFF3E0' : '#E8F5E9';
                     let imgHtml = item.image_data ? `<img class="complaint-img" src="${item.image_data}" alt="Item photo">` : '';
+                    let coordsHtml = (item.lat && item.lng) ? ` <br><strong>Coordinates:</strong> ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}` : '';
                     
                     return `
                         <div class="complaint-card">
@@ -467,7 +468,7 @@
                             </div>
                             <div style="font-size: 15px; color: var(--ink); margin-bottom: 8px;">
                                 <strong>Item:</strong> ${escHtml(item.item_name)} <br>
-                                <strong>Location:</strong> ${escHtml(item.location)} <br>
+                                <strong>Location:</strong> ${escHtml(item.location)} ${coordsHtml} <br>
                                 <strong>Date of incident:</strong> ${escHtml(item.item_date)}
                             </div>
                             <div class="complaint-desc">
@@ -497,6 +498,11 @@
         document.getElementById('lfLocation').value = '';
         document.getElementById('lfDate').value = '';
         document.getElementById('lfDesc').value = '';
+        document.getElementById('lfLat').value = '';
+        document.getElementById('lfLng').value = '';
+        document.getElementById('lfMap').style.display = 'none';
+        document.getElementById('lfLocationWarning').style.display = 'none';
+        document.getElementById('btnLFCurrentLocation').textContent = '📍 Use My Current Location';
         lfImage.value = '';
     });
 
@@ -535,6 +541,77 @@
         reader.readAsDataURL(file);
     });
 
+    let lfMapInstance = null;
+    let lfMarker = null;
+
+    document.getElementById('btnLFCurrentLocation').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser.");
+            return;
+        }
+        
+        const btn = document.getElementById('btnLFCurrentLocation');
+        btn.textContent = '📍 Getting location...';
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                document.getElementById('lfLat').value = lat;
+                document.getElementById('lfLng').value = lng;
+                btn.textContent = `📍 Location Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                
+                // Show warning if outside SIES GST campus (bounding box check)
+                const inCampus = (lat >= 19.0425 && lat <= 19.0455 && lng >= 73.0225 && lng <= 73.0255);
+                document.getElementById('lfLocationWarning').style.display = inCampus ? 'none' : 'block';
+                
+                // Show map
+                const mapEl = document.getElementById('lfMap');
+                mapEl.style.display = 'block';
+                
+                if (window.google) {
+                    const pos = { lat, lng };
+                    if (!lfMapInstance) {
+                        lfMapInstance = new google.maps.Map(mapEl, {
+                            center: pos,
+                            zoom: 18,
+                            mapTypeId: 'satellite'
+                        });
+                        
+                        const campusCoords = [
+                            { lat: 19.0425, lng: 73.0225 },
+                            { lat: 19.0455, lng: 73.0225 },
+                            { lat: 19.0455, lng: 73.0255 },
+                            { lat: 19.0425, lng: 73.0255 }
+                        ];
+                        new google.maps.Polygon({
+                            paths: campusCoords,
+                            strokeColor: "#FF0000",
+                            strokeOpacity: 0.8,
+                            strokeWeight: 2,
+                            fillColor: "#FF0000",
+                            fillOpacity: 0.15,
+                            map: lfMapInstance
+                        });
+                        
+                        lfMarker = new google.maps.Marker({
+                            position: pos,
+                            map: lfMapInstance
+                        });
+                    } else {
+                        lfMapInstance.setCenter(pos);
+                        lfMarker.setPosition(pos);
+                    }
+                }
+            },
+            (err) => {
+                btn.textContent = '📍 Use My Current Location';
+                alert("Could not get location. " + err.message);
+            }
+        );
+    });
+
     document.getElementById('btnSubmitLF').addEventListener('click', () => {
         const payload = {
             type: document.getElementById('lfType').value,
@@ -542,7 +619,9 @@
             location: document.getElementById('lfLocation').value.trim(),
             item_date: document.getElementById('lfDate').value,
             description: document.getElementById('lfDesc').value.trim(),
-            image_data: lfImageData
+            image_data: lfImageData,
+            lat: document.getElementById('lfLat').value || null,
+            lng: document.getElementById('lfLng').value || null
         };
 
         if (!payload.item_name || !payload.location || !payload.item_date || !payload.description) {

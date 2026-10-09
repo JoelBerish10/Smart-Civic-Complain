@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS lost_found (
     location TEXT NOT NULL,
     item_date TEXT NOT NULL,
     image_data TEXT,
+    lat REAL,
+    lng REAL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+

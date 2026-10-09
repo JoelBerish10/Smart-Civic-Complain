@@ -308,6 +308,11 @@
                 <div class="field-group">
                     <label>Location</label>
                     <input type="text" id="lfLocation" placeholder="e.g. Library 3rd Floor">
+                    <button id="btnLFCurrentLocation" type="button" style="margin-top:8px; width: 100%; background: #F4F6F8; border: 1.5px dashed var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; text-align: left;">📍 Use My Current Location</button>
+                    <input type="hidden" id="lfLat">
+                    <input type="hidden" id="lfLng">
+                    <div id="lfMap" style="width: 100%; height: 200px; border-radius: 10px; background: #eee; margin-top: 10px; display: none;"></div>
+                    <p id="lfLocationWarning" style="color: #E53935; font-size: 12px; margin-top: 5px; display: none;">Warning: You appear to be outside the campus boundary.</p>
                 </div>
                 <div class="field-group">
                     <label>Date</label>

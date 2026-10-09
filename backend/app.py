@@ -517,6 +517,8 @@ def list_lost_found():
             "location": r["location"],
             "item_date": r["item_date"],
             "image_data": r["image_data"],
+            "lat": r["lat"],
+            "lng": r["lng"],
             "created_at": r["created_at"],
             "reporter_name": r["reporter_name"],
             "reporter_email": r["reporter_email"]
@@ -536,14 +538,16 @@ def create_lost_found():
     location = data.get("location")
     item_date = data.get("item_date")
     image_data = data.get("image_data")
+    lat = data.get("lat")
+    lng = data.get("lng")
 
     if not item_type or not item_name or not description or not location or not item_date:
         return jsonify({"error": "All required fields are missing."}), 400
 
     conn = get_db()
     conn.execute(
-        "INSERT INTO lost_found (user_id, type, item_name, description, location, item_date, image_data) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (user_id, item_type, item_name, description, location, item_date, image_data),
+        "INSERT INTO lost_found (user_id, type, item_name, description, location, item_date, image_data, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, item_type, item_name, description, location, item_date, image_data, lat, lng),
     )
     conn.commit()
     conn.close()
