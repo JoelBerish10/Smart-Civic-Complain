@@ -45,7 +45,7 @@ def is_point_in_polygon(x, y, poly):
     return inside
 
 def is_in_sies_gst(lat, lng):
-    poly = [(19.0425, 73.0225), (19.0455, 73.0225), (19.0455, 73.0255), (19.0425, 73.0255)]
+    poly = [(19.0447, 73.0227), (19.0449, 73.0244), (19.0423, 73.0244), (19.0421, 73.0227)]
     return is_point_in_polygon(lat, lng, poly)
 
 # -- database helpers --------------------------------------------------------
@@ -239,14 +239,15 @@ def create_complaint():
         return jsonify({"error": "All fields and photo are required."}), 400
         
     try:
-        lat = float(lat)
-        lng = float(lng)
-        if not is_in_sies_gst(lat, lng):
+        lat = float(lat) if lat is not None and str(lat).strip() != "" else None
+        lng = float(lng) if lng is not None and str(lng).strip() != "" else None
+        if lat is not None and lng is not None and not is_in_sies_gst(lat, lng):
             # Optional: just warn or reject? Spec says: allow submission but require verification, or reject.
             # "Do not block a complaint purely because GPS is slightly inaccurate. If GPS accuracy is poor, allow: Location uncertain - admin verification required."
             pass # We'll accept it but maybe we could mark a flag, we'll just accept it since GPS can be inaccurate
     except (TypeError, ValueError):
-        pass # No GPS provided or invalid, we allow approximate pin
+        lat = None
+        lng = None
 
     # Image validation
     # 1. Base64 Size Check
@@ -540,6 +541,12 @@ def create_lost_found():
     image_data = data.get("image_data")
     lat = data.get("lat")
     lng = data.get("lng")
+    try:
+        lat = float(lat) if lat is not None and str(lat).strip() != "" else None
+        lng = float(lng) if lng is not None and str(lng).strip() != "" else None
+    except (TypeError, ValueError):
+        lat = None
+        lng = None
 
     if not item_type or not item_name or not description or not location or not item_date:
         return jsonify({"error": "All required fields are missing."}), 400

@@ -35,8 +35,12 @@
             // role-based UI
             if (currentUser.role === 'admin') {
                 document.getElementById('btnReport').style.display = 'none';
+                const topReport = document.getElementById('topNavReport');
+                if (topReport) topReport.style.display = 'none';
             } else {
                 document.getElementById('btnReport').style.display = 'flex';
+                const topReport = document.getElementById('topNavReport');
+                if (topReport) topReport.style.display = 'inline-flex';
             }
             document.getElementById('btnReportLostFound').style.display = 'block';
 
@@ -67,30 +71,48 @@
             });
     }
 
-    // -- view reports --------------------------------------------------------
-    document.getElementById('btnViewReports').addEventListener('click', () => {
+    // Modal scroll & lock helpers (avoids unwanted scrolling or background jumps)
+    function openModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.add('active');
+        const modalContent = modalEl.querySelector('.modal');
+        if (modalContent) modalContent.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // -- view feeds (in-place without page jumping or scrolling) -------------
+    document.getElementById('btnViewReports').addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         const section = document.getElementById('reportsSection');
         if (section.style.display === 'none') {
             section.style.display = 'block';
             document.getElementById('lostFoundSection').style.display = 'none';
             loadComplaints();
-            section.scrollIntoView({ behavior: 'smooth' });
         } else {
             section.style.display = 'none';
         }
     });
 
-    document.getElementById('btnLostFoundAction').addEventListener('click', () => {
-        const section = document.getElementById('lostFoundSection');
-        if (section.style.display === 'none') {
-            section.style.display = 'block';
-            document.getElementById('reportsSection').style.display = 'none';
-            loadLostFound();
-            section.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            section.style.display = 'none';
-        }
-    });
+    const btnViewLF = document.getElementById('btnViewLostFound');
+    if (btnViewLF) {
+        btnViewLF.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            const section = document.getElementById('lostFoundSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                document.getElementById('reportsSection').style.display = 'none';
+                loadLostFound();
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    }
 
     function loadComplaints() {
         fetch(API + '/api/complaints', { credentials: 'include' })
@@ -155,6 +177,8 @@
             if(c.status === 'RESOLVED') statusBadgeClass = 'fixed';
             if(c.status === 'REMOVED') statusBadgeClass = 'removed'; // needs styling in css ideally
 
+            let coordsHtml = (c.lat && c.lng) ? ` <span style="font-weight:600; color:var(--navy);">(📍 ${Number(c.lat).toFixed(4)}, ${Number(c.lng).toFixed(4)})</span>` : '';
+
             return `
                 <div class="complaint-card">
                     <div class="complaint-header">
@@ -166,7 +190,7 @@
                     </div>
                     <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
                         <strong>Category:</strong> ${escHtml(c.category || 'N/A')} | 
-                        <strong>Location:</strong> ${escHtml(c.location_area || 'N/A')} | 
+                        <strong>Location:</strong> ${escHtml(c.location_area || 'N/A')}${coordsHtml} | 
                         <strong>Severity:</strong> ${escHtml(c.severity || 'N/A')}
                     </div>
                     <div class="complaint-desc">
@@ -218,8 +242,8 @@
     const reportPreview = document.getElementById('reportPreview');
     let reportImageData = null;
 
-    document.getElementById('btnReport').addEventListener('click', () => {
-        reportModal.classList.add('active');
+    function openReportForm() {
+        openModal(reportModal);
         reportImageData = null;
         reportPreview.style.display = 'none';
         
@@ -230,12 +254,66 @@
         document.getElementById('reportSeverity').value = 'Medium';
         document.getElementById('reportLat').value = '';
         document.getElementById('reportLng').value = '';
+        const repGpsBtn = document.getElementById('btnReportCurrentLocation');
+        if (repGpsBtn) repGpsBtn.textContent = '📍 Use My Current Location';
+        const repMapBtn = document.getElementById('btnOpenMap');
+        if (repMapBtn) repMapBtn.textContent = '🗺️ Tap to set location on map';
+        const repWarn = document.getElementById('reportLocationWarning');
+        if (repWarn) repWarn.style.display = 'none';
         reportImage.value = '';
-    });
+    }
+
+    const btnReport = document.getElementById('btnReport');
+    if (btnReport) {
+        btnReport.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            openReportForm();
+        });
+    }
+
+    const topNavReport = document.getElementById('topNavReport');
+    if (topNavReport) {
+        topNavReport.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            openReportForm();
+        });
+    }
 
     document.getElementById('btnCancelReport').addEventListener('click', () => {
-        reportModal.classList.remove('active');
+        closeModal(reportModal);
     });
+
+    // Report a Problem: GPS current location button
+    const btnReportCurrentLocation = document.getElementById('btnReportCurrentLocation');
+    if (btnReportCurrentLocation) {
+        btnReportCurrentLocation.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+            btnReportCurrentLocation.textContent = '📍 Getting location...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    document.getElementById('reportLat').value = lat.toFixed(6);
+                    document.getElementById('reportLng').value = lng.toFixed(6);
+                    btnReportCurrentLocation.textContent = `📍 GPS Set (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                    const mapBtn = document.getElementById('btnOpenMap');
+                    if (mapBtn) mapBtn.textContent = `🗺️ View / Adjust on Map`;
+
+                    const inCampus = isInsideCampus(lat, lng);
+                    const warnEl = document.getElementById('reportLocationWarning');
+                    if (warnEl) warnEl.style.display = inCampus ? 'none' : 'block';
+                },
+                (err) => {
+                    btnReportCurrentLocation.textContent = '📍 Use My Current Location';
+                    alert("Could not get location: " + err.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        });
+    }
 
     reportImage.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -256,8 +334,8 @@
             description: document.getElementById('reportDesc').value.trim(),
             affected_object: document.getElementById('reportObject').value.trim(),
             severity: document.getElementById('reportSeverity').value,
-            lat: document.getElementById('reportLat').value,
-            lng: document.getElementById('reportLng').value,
+            lat: document.getElementById('reportLat').value || null,
+            lng: document.getElementById('reportLng').value || null,
             image_data: reportImageData
         };
 
@@ -296,34 +374,245 @@
             });
     });
     
-    // -- map modal ----------------------------------------------------------
+    // -- map modal & Leaflet setup -------------------------------------------
     const mapModal = document.getElementById('mapModal');
-    
+
+    // 4-sided quadrilateral campus boundary perimeter (verified with SIES GST records)
+    const SIES_CAMPUS_POLYGON = [
+        [19.0447, 73.0227], // NW: AG Patil Marg / Shivaji Chowk
+        [19.0449, 73.0244], // NE: Near MBA campus / DY border
+        [19.0423, 73.0244], // SE: Parking & sports edge
+        [19.0421, 73.0227]  // SW: Adi Shankaracharya Marg & Amphitheatre
+    ];
+
+    const SIES_CAMPUS_CENTER = [19.0435, 73.0235];
+
+    // Verified campus landmarks
+    const SIES_CAMPUS_LANDMARKS = [
+        { name: "SIES GST Engineering Campus", icon: "🎓", coords: [19.0435, 73.0231] },
+        { name: "MBA Campus", icon: "💼", coords: [19.0445, 73.0242] },
+        { name: "Commerce & Arts Campus", icon: "📚", coords: [19.0427, 73.0234] },
+        { name: "Ayyappa Temple", icon: "🛕", coords: [19.0435, 73.0239] }
+    ];
+
+    // Ray-casting algorithm matching backend is_in_sies_gst
+    function isInsideCampus(lat, lng) {
+        if (lat === null || lat === undefined || isNaN(lat) || String(lat).trim() === '') {
+            return true; // Optional: empty coordinates are allowed
+        }
+        const x = Number(lat);
+        const y = Number(lng);
+        const poly = SIES_CAMPUS_POLYGON;
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const xi = poly[i][0], yi = poly[i][1];
+            const xj = poly[j][0], yj = poly[j][1];
+            const intersect = ((yi > y) !== (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // Configure Leaflet marker icon paths for CDN
+    if (window.L && L.Icon && L.Icon.Default) {
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+    }
+
+    let leafletMap = null;
+    let leafletMarker = null;
+    let campusPolygonLayer = null;
+    let landmarkLayers = [];
+    let currentMapTarget = 'report'; // 'report' or 'lf'
+    let selectedLat = null;
+    let selectedLng = null;
+
+    function initOrUpdateMap(lat, lng) {
+        const mapEl = document.getElementById('map');
+        if (!mapEl || !window.L) return;
+
+        const hasValidCoords = (lat !== null && lat !== undefined && !isNaN(lat) && String(lat).trim() !== '');
+        const initialLat = hasValidCoords ? Number(lat) : SIES_CAMPUS_CENTER[0];
+        const initialLng = hasValidCoords ? Number(lng) : SIES_CAMPUS_CENTER[1];
+        const centerPos = [initialLat, initialLng];
+
+        selectedLat = initialLat;
+        selectedLng = initialLng;
+
+        if (!leafletMap) {
+            leafletMap = L.map('map', {
+                center: centerPos,
+                zoom: 17,
+                minZoom: 16,
+                maxZoom: 19,
+                zoomControl: true,
+                maxBounds: [
+                    [19.0390, 73.0180],
+                    [19.0480, 73.0290]
+                ],
+                maxBoundsViscosity: 0.8
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            }).addTo(leafletMap);
+
+            // 4-sided quadrilateral campus boundary
+            campusPolygonLayer = L.polygon(SIES_CAMPUS_POLYGON, {
+                color: '#15803d',
+                weight: 2.5,
+                opacity: 0.95,
+                fillColor: '#22c55e',
+                fillOpacity: 0.12,
+                dashArray: '5, 5'
+            }).addTo(leafletMap);
+            campusPolygonLayer.bindTooltip('SIES GST Campus Perimeter', { sticky: true });
+
+            // Campus landmark markers
+            SIES_CAMPUS_LANDMARKS.forEach(lm => {
+                const landmarkIcon = L.divIcon({
+                    className: 'campus-landmark-badge',
+                    html: `<div class="campus-landmark-pill"><span class="lm-emoji">${lm.icon}</span><span class="lm-text">${lm.name}</span></div>`,
+                    iconSize: null,
+                    iconAnchor: [12, 12]
+                });
+                const lmMarker = L.marker(lm.coords, { icon: landmarkIcon, interactive: true }).addTo(leafletMap);
+                lmMarker.on('click', () => {
+                    if (leafletMarker) {
+                        leafletMarker.setLatLng(lm.coords);
+                        updatePinLocation(lm.coords[0], lm.coords[1]);
+                    }
+                });
+                landmarkLayers.push(lmMarker);
+            });
+
+            // Draggable pin marker
+            leafletMarker = L.marker(centerPos, { draggable: true, zIndexOffset: 1000 }).addTo(leafletMap);
+
+            leafletMarker.on('drag', function (e) {
+                const pos = e.target.getLatLng();
+                updatePinLocation(pos.lat, pos.lng);
+            });
+
+            leafletMarker.on('dragend', function (e) {
+                const pos = e.target.getLatLng();
+                updatePinLocation(pos.lat, pos.lng);
+            });
+
+            leafletMap.on('click', function (e) {
+                leafletMarker.setLatLng(e.latlng);
+                updatePinLocation(e.latlng.lat, e.latlng.lng);
+            });
+        } else {
+            leafletMarker.setLatLng(centerPos);
+            leafletMap.setView(centerPos, 17);
+        }
+
+        updatePinLocation(selectedLat, selectedLng);
+
+        setTimeout(() => {
+            if (leafletMap) {
+                leafletMap.invalidateSize();
+                if (!hasValidCoords) {
+                    leafletMap.fitBounds(SIES_CAMPUS_POLYGON, { padding: [20, 20] });
+                }
+            }
+        }, 150);
+    }
+
+    function updatePinLocation(lat, lng) {
+        selectedLat = Number(lat);
+        selectedLng = Number(lng);
+
+        const coordsSpan = document.getElementById('mapModalCoords');
+        if (coordsSpan) {
+            coordsSpan.textContent = `Pin: ${selectedLat.toFixed(5)}, ${selectedLng.toFixed(5)}`;
+        }
+
+        const warnEl = document.getElementById('mapBoundaryWarning');
+        if (warnEl) {
+            warnEl.style.display = isInsideCampus(selectedLat, selectedLng) ? 'none' : 'block';
+        }
+    }
+
+    function openMapModal(target) {
+        currentMapTarget = target;
+        const latInput = document.getElementById(target === 'report' ? 'reportLat' : 'lfLat');
+        const lngInput = document.getElementById(target === 'report' ? 'reportLng' : 'lfLng');
+
+        const curLat = latInput && latInput.value ? parseFloat(latInput.value) : null;
+        const curLng = lngInput && lngInput.value ? parseFloat(lngInput.value) : null;
+
+        openModal(mapModal);
+        initOrUpdateMap(curLat, curLng);
+    }
+
     document.getElementById('btnOpenMap').addEventListener('click', (e) => {
         e.preventDefault();
-        mapModal.classList.add('active');
-        // trigger resize for map to load properly if hidden
-        setTimeout(() => {
-            if(window.google && map && marker) {
-                google.maps.event.trigger(map, "resize");
-                map.setCenter(marker.getPosition());
-            }
-        }, 100);
+        openMapModal('report');
     });
-    
+
     document.getElementById('btnCancelMap').addEventListener('click', () => {
-        mapModal.classList.remove('active');
+        closeModal(mapModal);
     });
-    
+
     document.getElementById('btnSaveMap').addEventListener('click', () => {
-        if(window.google && marker) {
-            const pos = marker.getPosition();
-            document.getElementById('reportLat').value = pos.lat();
-            document.getElementById('reportLng').value = pos.lng();
-            document.getElementById('btnOpenMap').textContent = `📍 Location Saved (${pos.lat().toFixed(4)}, ${pos.lng().toFixed(4)})`;
+        if (selectedLat !== null && selectedLng !== null) {
+            const isReport = (currentMapTarget === 'report');
+            const latInputId = isReport ? 'reportLat' : 'lfLat';
+            const lngInputId = isReport ? 'reportLng' : 'lfLng';
+            const openBtnId = isReport ? 'btnOpenMap' : 'btnLFOpenMap';
+            const warningId = isReport ? 'reportLocationWarning' : 'lfLocationWarning';
+
+            document.getElementById(latInputId).value = selectedLat.toFixed(6);
+            document.getElementById(lngInputId).value = selectedLng.toFixed(6);
+
+            const openBtn = document.getElementById(openBtnId);
+            if (openBtn) {
+                openBtn.textContent = `📍 Location Saved (${selectedLat.toFixed(4)}, ${selectedLng.toFixed(4)})`;
+            }
+
+            const warnEl = document.getElementById(warningId);
+            if (warnEl) {
+                warnEl.style.display = isInsideCampus(selectedLat, selectedLng) ? 'none' : 'block';
+            }
         }
-        mapModal.classList.remove('active');
+        closeModal(mapModal);
     });
+
+    const btnModalGPS = document.getElementById('btnModalGPS');
+    if (btnModalGPS) {
+        btnModalGPS.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+            btnModalGPS.textContent = '📍 Fetching GPS...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    btnModalGPS.textContent = '📍 Use My GPS Location';
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    if (leafletMap && leafletMarker) {
+                        leafletMarker.setLatLng([lat, lng]);
+                        leafletMap.setView([lat, lng], 18);
+                        updatePinLocation(lat, lng);
+                    }
+                },
+                (err) => {
+                    btnModalGPS.textContent = '📍 Use My GPS Location';
+                    alert("Could not get GPS location: " + err.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        });
+    }
 
     // -- resolve modal (admin) -----------------------------------------------
     const resolveModal = document.getElementById('resolveModal');
@@ -337,11 +626,11 @@
         fixPreview.style.display = 'none';
         fixImage.value = '';
         document.getElementById('fixNote').value = '';
-        resolveModal.classList.add('active');
+        openModal(resolveModal);
     }
 
     document.getElementById('btnCancelResolve').addEventListener('click', () => {
-        resolveModal.classList.remove('active');
+        closeModal(resolveModal);
     });
 
     fixImage.addEventListener('change', (e) => {
@@ -377,7 +666,7 @@
                 return res;
             })
             .then(() => {
-                resolveModal.classList.remove('active');
+                closeModal(resolveModal);
                 btn.disabled = false;
                 btn.textContent = 'Upload & Resolve Request';
                 loadStats();
@@ -397,11 +686,11 @@
         document.getElementById('removeComplaintId').value = complaintId;
         document.getElementById('removeReason').value = 'Duplicate';
         document.getElementById('removePenalty').checked = false;
-        removeModal.classList.add('active');
+        openModal(removeModal);
     }
 
     document.getElementById('btnCancelRemove').addEventListener('click', () => {
-        removeModal.classList.remove('active');
+        closeModal(removeModal);
     });
     
     document.getElementById('btnSubmitRemove').addEventListener('click', () => {
@@ -425,7 +714,7 @@
                 return res;
             })
             .then(() => {
-                removeModal.classList.remove('active');
+                closeModal(removeModal);
                 btn.disabled = false;
                 btn.textContent = 'Remove Request';
                 loadStats();
@@ -485,8 +774,8 @@
     const lfPreview = document.getElementById('lfPreview');
     let lfImageData = null;
 
-    document.getElementById('btnReportLostFound').addEventListener('click', () => {
-        lfModal.classList.add('active');
+    function openLostFoundForm() {
+        openModal(lfModal);
         lfImageData = null;
         lfPreview.style.display = 'none';
         
@@ -500,11 +789,38 @@
         document.getElementById('lfDesc').value = '';
         document.getElementById('lfLat').value = '';
         document.getElementById('lfLng').value = '';
-        document.getElementById('lfMap').style.display = 'none';
-        document.getElementById('lfLocationWarning').style.display = 'none';
-        document.getElementById('btnLFCurrentLocation').textContent = '📍 Use My Current Location';
+        const warnEl = document.getElementById('lfLocationWarning');
+        if (warnEl) warnEl.style.display = 'none';
+        const lfGpsBtn = document.getElementById('btnLFCurrentLocation');
+        if (lfGpsBtn) lfGpsBtn.textContent = '📍 Use My Current Location';
+        const lfMapBtn = document.getElementById('btnLFOpenMap');
+        if (lfMapBtn) lfMapBtn.textContent = '🗺️ Tap to set location on map';
         lfImage.value = '';
-    });
+    }
+
+    const btnReportLF = document.getElementById('btnReportLostFound');
+    if (btnReportLF) {
+        btnReportLF.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            openLostFoundForm();
+        });
+    }
+
+    const btnLFAction = document.getElementById('btnLostFoundAction');
+    if (btnLFAction) {
+        btnLFAction.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            openLostFoundForm();
+        });
+    }
+
+    const topNavLF = document.getElementById('topNavLF');
+    if (topNavLF) {
+        topNavLF.addEventListener('click', (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+            openLostFoundForm();
+        });
+    }
 
     document.getElementById('btnSelectLost').addEventListener('click', () => {
         document.getElementById('lfType').value = 'Lost';
@@ -521,7 +837,7 @@
     });
 
     document.getElementById('btnCancelLFStep1').addEventListener('click', () => {
-        lfModal.classList.remove('active');
+        closeModal(lfModal);
     });
 
     document.getElementById('btnBackLF').addEventListener('click', () => {
@@ -541,9 +857,6 @@
         reader.readAsDataURL(file);
     });
 
-    let lfMapInstance = null;
-    let lfMarker = null;
-
     document.getElementById('btnLFCurrentLocation').addEventListener('click', () => {
         if (!navigator.geolocation) {
             alert("Geolocation is not supported by your browser.");
@@ -558,59 +871,33 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 
-                document.getElementById('lfLat').value = lat;
-                document.getElementById('lfLng').value = lng;
-                btn.textContent = `📍 Location Captured: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                
-                // Show warning if outside SIES GST campus (bounding box check)
-                const inCampus = (lat >= 19.0425 && lat <= 19.0455 && lng >= 73.0225 && lng <= 73.0255);
-                document.getElementById('lfLocationWarning').style.display = inCampus ? 'none' : 'block';
-                
-                // Show map
-                const mapEl = document.getElementById('lfMap');
-                mapEl.style.display = 'block';
-                
-                if (window.google) {
-                    const pos = { lat, lng };
-                    if (!lfMapInstance) {
-                        lfMapInstance = new google.maps.Map(mapEl, {
-                            center: pos,
-                            zoom: 18,
-                            mapTypeId: 'satellite'
-                        });
-                        
-                        const campusCoords = [
-                            { lat: 19.0425, lng: 73.0225 },
-                            { lat: 19.0455, lng: 73.0225 },
-                            { lat: 19.0455, lng: 73.0255 },
-                            { lat: 19.0425, lng: 73.0255 }
-                        ];
-                        new google.maps.Polygon({
-                            paths: campusCoords,
-                            strokeColor: "#FF0000",
-                            strokeOpacity: 0.8,
-                            strokeWeight: 2,
-                            fillColor: "#FF0000",
-                            fillOpacity: 0.15,
-                            map: lfMapInstance
-                        });
-                        
-                        lfMarker = new google.maps.Marker({
-                            position: pos,
-                            map: lfMapInstance
-                        });
-                    } else {
-                        lfMapInstance.setCenter(pos);
-                        lfMarker.setPosition(pos);
-                    }
+                document.getElementById('lfLat').value = lat.toFixed(6);
+                document.getElementById('lfLng').value = lng.toFixed(6);
+                btn.textContent = `📍 GPS Set (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                const lfMapBtn = document.getElementById('btnLFOpenMap');
+                if (lfMapBtn) {
+                    lfMapBtn.textContent = `🗺️ View / Adjust on Map`;
                 }
+                
+                const inCampus = isInsideCampus(lat, lng);
+                const warnEl = document.getElementById('lfLocationWarning');
+                if (warnEl) warnEl.style.display = inCampus ? 'none' : 'block';
             },
             (err) => {
                 btn.textContent = '📍 Use My Current Location';
-                alert("Could not get location. " + err.message);
-            }
+                alert("Could not get location: " + err.message);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     });
+
+    const btnLFOpenMap = document.getElementById('btnLFOpenMap');
+    if (btnLFOpenMap) {
+        btnLFOpenMap.addEventListener('click', (e) => {
+            e.preventDefault();
+            openMapModal('lf');
+        });
+    }
 
     document.getElementById('btnSubmitLF').addEventListener('click', () => {
         const payload = {
@@ -645,7 +932,7 @@
             return res;
         })
         .then(() => {
-            lfModal.classList.remove('active');
+            closeModal(lfModal);
             btn.disabled = false;
             btn.textContent = 'Submit';
             loadLostFound();
@@ -659,8 +946,9 @@
 
     // close modals on overlay click
     [reportModal, resolveModal, removeModal, mapModal, lfModal].forEach(modal => {
+        if (!modal) return;
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
+            if (e.target === modal) closeModal(modal);
         });
     });
 

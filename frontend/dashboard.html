@@ -10,6 +10,7 @@
         href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         .dash-body { background: var(--paper); min-height: 100vh; font-family: 'Manrope', sans-serif; color: var(--ink); }
 
@@ -84,8 +85,34 @@
         .modal select { width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: border-color 0.15s; box-sizing: border-box; }
         .modal select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,79,0.14); }
         .map-btn { width: 100%; background: #F4F6F8; border: 1.5px dashed var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; text-align: left; }
-        .map-btn:hover { border-color: var(--navy); background: #E9ECEF; }
-        #map { width: 100%; height: 300px; border-radius: 10px; background: #eee; }
+        #map { width: 100%; height: 320px; border-radius: 10px; background: #e5e7eb; overflow: hidden; position: relative; border: 1px solid var(--line); }
+        .campus-landmark-badge { background: transparent !important; border: none !important; }
+        .campus-landmark-pill {
+            background: rgba(2, 44, 34, 0.94);
+            color: #ffffff;
+            padding: 4px 8px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Manrope', sans-serif;
+            pointer-events: auto;
+        }
+        .campus-landmark-pill:hover {
+            transform: scale(1.08);
+            background: #047857;
+            border-color: #6FCF97;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        .campus-landmark-pill .lm-emoji { font-size: 12px; }
+        .campus-landmark-pill .lm-text { font-size: 10.5px; }
 
         /* buttons */
         .btn-row { display: flex; gap: 12px; margin-top: 24px; }
@@ -141,9 +168,11 @@
             <span>CampusLoop</span>
         </div>
         <div class="user-area" id="userArea" style="display:none;">
+            <button class="topbar-nav-btn" id="topNavReport" type="button" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6FCF97; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: none;">📸 Report a Problem</button>
+            <button class="topbar-nav-btn" id="topNavLF" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">📦 Lost &amp; Found</button>
             <span class="role-badge" id="roleBadge"></span>
             <span class="user-name" id="topName"></span>
-            <button class="btn-logout" id="btnLogout">Log out</button>
+            <button class="btn-logout" id="btnLogout" type="button">Log out</button>
         </div>
     </header>
 
@@ -183,17 +212,21 @@
         <div class="info-card">
             <h2>Quick Actions</h2>
             <div class="quick-actions">
-                <button class="action-btn" id="btnReport" style="display:none;">
+                <button class="action-btn" id="btnReport" type="button" style="display:none;">
                     <span class="action-icon">📸</span>
                     <div class="action-text"><strong>Report a Problem</strong><span>Upload photo &amp; describe</span></div>
                 </button>
-                <button class="action-btn" id="btnLostFoundAction">
+                <button class="action-btn" id="btnLostFoundAction" type="button">
                     <span class="action-icon">📦</span>
-                    <div class="action-text"><strong>Lost &amp; Found</strong><span>Report or find items</span></div>
+                    <div class="action-text"><strong>Lost &amp; Found</strong><span>Report misplaced item</span></div>
                 </button>
-                <button class="action-btn" id="btnViewReports">
+                <button class="action-btn" id="btnViewReports" type="button">
                     <span class="action-icon">📋</span>
                     <div class="action-text"><strong id="viewReportsLabel">All Reports</strong><span id="viewReportsDesc">View all reported campus issues</span></div>
+                </button>
+                <button class="action-btn" id="btnViewLostFound" type="button">
+                    <span class="action-icon">🔍</span>
+                    <div class="action-text"><strong>Lost &amp; Found Feed</strong><span>Browse reported belongings</span></div>
                 </button>
             </div>
         </div>
@@ -240,8 +273,12 @@
                 <input type="text" id="reportLocation" placeholder="e.g. Canteen - Main Entrance">
             </div>
             <div class="field-group">
-                <label>Map Pin (Optional but helpful)</label>
-                <button class="map-btn" id="btnOpenMap">📍 Tap to set location on map</button>
+                <label>Set Location (Optional)</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="map-btn" id="btnReportCurrentLocation" style="flex: 1; min-width: 170px;">📍 Use My Current Location</button>
+                    <button type="button" class="map-btn" id="btnOpenMap" style="flex: 1; min-width: 170px;">🗺️ Tap to set location on map</button>
+                </div>
+                <p id="reportLocationWarning" style="color: #E53935; font-size: 12px; margin-top: 6px; margin-bottom: 0; display: none;">Warning: You appear to be outside the campus boundary.</p>
                 <input type="hidden" id="reportLat">
                 <input type="hidden" id="reportLng">
             </div>
@@ -308,11 +345,13 @@
                 <div class="field-group">
                     <label>Location</label>
                     <input type="text" id="lfLocation" placeholder="e.g. Library 3rd Floor">
-                    <button id="btnLFCurrentLocation" type="button" style="margin-top:8px; width: 100%; background: #F4F6F8; border: 1.5px dashed var(--line); border-radius: 10px; padding: 11px 13px; font-family: 'Manrope', sans-serif; font-size: 14px; color: var(--ink); cursor: pointer; text-align: left;">📍 Use My Current Location</button>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                        <button id="btnLFCurrentLocation" type="button" class="map-btn" style="flex: 1; min-width: 170px;">📍 Use My Current Location</button>
+                        <button id="btnLFOpenMap" type="button" class="map-btn" style="flex: 1; min-width: 170px;">🗺️ Tap to set location on map</button>
+                    </div>
+                    <p id="lfLocationWarning" style="color: #E53935; font-size: 12px; margin-top: 6px; margin-bottom: 0; display: none;">Warning: You appear to be outside the campus boundary.</p>
                     <input type="hidden" id="lfLat">
                     <input type="hidden" id="lfLng">
-                    <div id="lfMap" style="width: 100%; height: 200px; border-radius: 10px; background: #eee; margin-top: 10px; display: none;"></div>
-                    <p id="lfLocationWarning" style="color: #E53935; font-size: 12px; margin-top: 5px; display: none;">Warning: You appear to be outside the campus boundary.</p>
                 </div>
                 <div class="field-group">
                     <label>Date</label>
@@ -341,10 +380,26 @@
 
     <!-- MAP MODAL -->
     <div class="modal-overlay" id="mapModal">
-        <div class="modal">
+        <div class="modal" style="max-width: 560px;">
             <h2>Set Location</h2>
-            <p class="sub">Drag the pin to the approximate location inside SIES GST campus.</p>
+            <p class="sub">Drag the pin or click anywhere on the map to set location within SIES GST campus.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="btn-cancel" id="btnModalGPS" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                    📍 Use My GPS Location
+                </button>
+                <span id="mapModalCoords" style="font-size: 12px; color: var(--ink-soft); font-family: monospace;"></span>
+            </div>
+            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; align-items: center;">
+                <span style="font-weight: 700; color: var(--navy); margin-right: 4px;">Campus Landmarks:</span>
+                <span style="background: rgba(4,120,87,0.1); color: var(--navy); padding: 3px 8px; border-radius: 6px; font-weight: 600;">🎓 SIES GST Engg</span>
+                <span style="background: rgba(4,120,87,0.1); color: var(--navy); padding: 3px 8px; border-radius: 6px; font-weight: 600;">💼 MBA Campus</span>
+                <span style="background: rgba(4,120,87,0.1); color: var(--navy); padding: 3px 8px; border-radius: 6px; font-weight: 600;">📚 Commerce &amp; Arts</span>
+                <span style="background: rgba(4,120,87,0.1); color: var(--navy); padding: 3px 8px; border-radius: 6px; font-weight: 600;">🛕 Ayyappa Temple</span>
+            </div>
             <div id="map"></div>
+            <p id="mapBoundaryWarning" style="color: #E53935; font-size: 12px; margin-top: 8px; margin-bottom: 0; display: none;">
+                ⚠️ Warning: Pin is currently outside the SIES GST campus boundary.
+            </p>
             <div class="btn-row">
                 <button class="btn-submit" id="btnSaveMap">Save Location</button>
                 <button class="btn-cancel" id="btnCancelMap">Cancel</button>
@@ -405,51 +460,8 @@
         </div>
     </div>
 
-    <!-- Google Maps JS API (Replace YOUR_API_KEY with actual key if available, otherwise it works in dev mode) -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap"></script>
-    <script>
-        let map, marker;
-        function initMap() {
-            // SIES GST coordinates approx
-            const sies_gst = { lat: 19.0440, lng: 73.0240 };
-            
-            const mapOptions = {
-                center: sies_gst,
-                zoom: 18,
-                mapTypeId: 'satellite'
-            };
-            
-            // Map element check
-            const mapEl = document.getElementById('map');
-            if (!mapEl) return;
-            
-            map = new google.maps.Map(mapEl, mapOptions);
-            
-            // Draw SIES GST Polygon
-            const campusCoords = [
-                { lat: 19.0425, lng: 73.0225 },
-                { lat: 19.0455, lng: 73.0225 },
-                { lat: 19.0455, lng: 73.0255 },
-                { lat: 19.0425, lng: 73.0255 }
-            ];
-            
-            const campusPolygon = new google.maps.Polygon({
-                paths: campusCoords,
-                strokeColor: "#FF0000",
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-                fillColor: "#FF0000",
-                fillOpacity: 0.15,
-            });
-            campusPolygon.setMap(map);
-            
-            marker = new google.maps.Marker({
-                position: sies_gst,
-                map: map,
-                draggable: true
-            });
-        }
-    </script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="dashboard.js"></script>
 </body>
 

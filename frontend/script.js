@@ -39,6 +39,17 @@ document.querySelectorAll('[data-goto-sub]').forEach(btn => {
     btn.addEventListener('click', () => showSub(btn.dataset.gotoSub));
 });
 
+// Auto-switch to signup if navigated with ?tab=signup or #signup
+try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'signup' || window.location.hash === '#signup') {
+        showRole('student');
+        showSub('signup');
+    }
+} catch (e) {
+    // Ignore URL parse error in older browsers
+}
+
 // password show/hide
 document.querySelectorAll('.pwtoggle').forEach(btn => {
     btn.addEventListener('click', () => {
