@@ -9,7 +9,7 @@ import base64
 import re
 import hashlib
 import io
-from PIL import Image
+from PIL import Image, ImageOps
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -47,6 +47,87 @@ def is_point_in_polygon(x, y, poly):
 def is_in_sies_gst(lat, lng):
     poly = [(19.0447, 73.0227), (19.0449, 73.0244), (19.0423, 73.0244), (19.0421, 73.0227)]
     return is_point_in_polygon(lat, lng, poly)
+
+
+# -- image compression & validation helpers ---------------------------------
+def process_and_compress_image(data_uri, max_dimension=1600, target_max_bytes=1024 * 1024):
+    """
+    Validates, corrects orientation, scales very high-res photos to max_dimension (preserving aspect ratio),
+    and compresses to JPEG under target_max_bytes (~500 KB - 1 MB).
+    Gracefully falls back to original data_uri if compression cannot be applied, so submissions NEVER fail.
+    """
+    if not data_uri or not isinstance(data_uri, str) or not data_uri.strip():
+        raise ValueError("Image data is missing or invalid.")
+
+    # Calculate fallback hash immediately
+    fallback_hash = hashlib.sha256(data_uri.encode("utf-8")).hexdigest()
+
+    try:
+        if "," in data_uri:
+            header, encoded = data_uri.split(",", 1)
+        else:
+            encoded = data_uri
+
+        # Remove any whitespace or line breaks in base64 string
+        encoded = re.sub(r"\s+", "", encoded)
+        raw_bytes = base64.b64decode(encoded)
+
+        if len(raw_bytes) < 30:
+            return data_uri, fallback_hash
+
+        img = Image.open(io.BytesIO(raw_bytes))
+
+        # Handle EXIF orientation (transpose) so mobile camera photos remain upright
+        try:
+            img = ImageOps.exif_transpose(img)
+        except Exception:
+            pass
+
+        # Convert palette/transparency to RGB for clean JPEG compression
+        if img.mode in ("RGBA", "LA"):
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+
+        # Resize if exceeding max_dimension while strictly preserving aspect ratio
+        width, height = img.size
+        if width > max_dimension or height > max_dimension:
+            scale = min(max_dimension / width, max_dimension / height)
+            new_width = max(1, round(width * scale))
+            new_height = max(1, round(height * scale))
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Compress to JPEG with target size (~500 KB - 1 MB)
+        quality = 84
+        out_buf = io.BytesIO()
+        img.save(out_buf, format="JPEG", quality=quality, optimize=True)
+
+        # If it exceeds target_max_bytes, step down quality slightly down to 70 without making it blurry
+        while len(out_buf.getvalue()) > target_max_bytes and quality > 70:
+            quality -= 5
+            out_buf = io.BytesIO()
+            img.save(out_buf, format="JPEG", quality=quality, optimize=True)
+
+        compressed_bytes = out_buf.getvalue()
+        compressed_b64 = base64.b64encode(compressed_bytes).decode("ascii")
+        compressed_uri = f"data:image/jpeg;base64,{compressed_b64}"
+        img_hash = hashlib.sha256(compressed_bytes).hexdigest()
+
+        return compressed_uri, img_hash
+
+    except Exception:
+        # Fail-safe: if any compression error occurs, return original data so submission is never broken
+        return data_uri, fallback_hash
+
+
+@app.after_request
+def add_cache_headers(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # -- database helpers --------------------------------------------------------
 def get_db():
@@ -164,6 +245,7 @@ def login():
             "department": user["department"],
             "year": user["year"],
             "role": user["role"],
+            "trust_score": user["trust_score"] if "trust_score" in user.keys() else 100,
         },
     }), 200
 
@@ -190,6 +272,7 @@ def me():
             "department": user["department"],
             "year": user["year"],
             "role": user["role"],
+            "trust_score": user["trust_score"] if "trust_score" in user.keys() else 100,
         }
     }), 200
 
@@ -249,41 +332,27 @@ def create_complaint():
         lat = None
         lng = None
 
-    # Image validation
-    # 1. Base64 Size Check
-    if len(image_data) > 5 * 1024 * 1024 * 1.34: # Approx 5MB base64
-        return jsonify({"error": "Image is too large. Please upload an image below 5 MB."}), 400
-    if len(image_data) < 10 * 1024 * 1.34: # Approx 10KB
-        return jsonify({"error": "Invalid image. Please upload a valid photo."}), 400
-        
+    # Process, validate and compress image (both frontend and backend protected)
     try:
-        header, encoded = image_data.split(",", 1)
-        mime = header.split(";")[0].split(":")[1]
-        if mime not in ["image/jpeg", "image/jpg", "image/png"]:
-            return jsonify({"error": "Invalid file type. Only JPEG and PNG are allowed."}), 400
-            
-        img_bytes = base64.b64decode(encoded)
-        img_hash = hashlib.sha256(img_bytes).hexdigest()
-        
-        img = Image.open(io.BytesIO(img_bytes))
-        width, height = img.size
-        if width < 640 or height < 480:
-             return jsonify({"error": "Image resolution is too low. Please upload a clearer photo."}), 400
-             
-    except Exception as e:
-        return jsonify({"error": "Failed to process image."}), 400
+        compressed_image_data, img_hash = process_and_compress_image(
+            image_data, max_dimension=1600, target_max_bytes=1024 * 1024
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Failed to process and compress image."}), 400
 
     conn = get_db()
     
-    # Duplicate check
-    existing = conn.execute("SELECT id FROM complaints WHERE duplicate_hash = ?", (img_hash,)).fetchone()
+    # Duplicate check based on normalized compressed image hash (exclude removed complaints)
+    existing = conn.execute("SELECT id FROM complaints WHERE duplicate_hash = ? AND status != 'REMOVED'", (img_hash,)).fetchone()
     if existing:
         conn.close()
         return jsonify({"error": "This image appears to have already been submitted."}), 400
 
     conn.execute(
         "INSERT INTO complaints (user_id, category, location_area, description, affected_object, severity, lat, lng, image_data, duplicate_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (user_id, category, location_area, description, affected_object, severity, lat, lng, image_data, img_hash),
+        (user_id, category, location_area, description, affected_object, severity, lat, lng, compressed_image_data, img_hash),
     )
     conn.commit()
     conn.close()
@@ -474,6 +543,15 @@ def resolve_complaint(complaint_id):
     if not fix_image_data:
         return jsonify({"error": "You must upload a fix image before resolving."}), 400
 
+    try:
+        compressed_fix_image, _ = process_and_compress_image(
+            fix_image_data, max_dimension=1600, target_max_bytes=1024 * 1024
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Failed to process fix image."}), 400
+
     conn = get_db()
     complaint = conn.execute("SELECT * FROM complaints WHERE id = ?", (complaint_id,)).fetchone()
     if not complaint:
@@ -482,7 +560,7 @@ def resolve_complaint(complaint_id):
 
     conn.execute(
         "UPDATE complaints SET status='RESOLVED', fix_image_data=?, fix_note=?, resolved_by=?, resolved_at=CURRENT_TIMESTAMP WHERE id=?",
-        (fix_image_data, fix_note, user_id, complaint_id),
+        (compressed_fix_image, fix_note, user_id, complaint_id),
     )
     
     # Increase trust score for useful complaint
@@ -533,11 +611,11 @@ def create_lost_found():
         return jsonify({"error": "Not authenticated."}), 401
 
     data = request.get_json()
-    item_type = data.get("type")
-    item_name = data.get("item_name")
-    description = data.get("description")
-    location = data.get("location")
-    item_date = data.get("item_date")
+    item_type = (data.get("type") or "").strip()
+    item_name = (data.get("item_name") or "").strip()
+    description = (data.get("description") or "").strip()
+    location = (data.get("location") or "").strip()
+    item_date = (data.get("item_date") or "").strip()
     image_data = data.get("image_data")
     lat = data.get("lat")
     lng = data.get("lng")
@@ -549,12 +627,23 @@ def create_lost_found():
         lng = None
 
     if not item_type or not item_name or not description or not location or not item_date:
-        return jsonify({"error": "All required fields are missing."}), 400
+        return jsonify({"error": "All required fields (type, item name, location, date, description) are required."}), 400
+
+    compressed_lf_image = None
+    if image_data and str(image_data).strip() and str(image_data).strip() != "null":
+        try:
+            compressed_lf_image, _ = process_and_compress_image(
+                image_data, max_dimension=1600, target_max_bytes=1024 * 1024
+            )
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception:
+            return jsonify({"error": "Failed to process item photo."}), 400
 
     conn = get_db()
     conn.execute(
         "INSERT INTO lost_found (user_id, type, item_name, description, location, item_date, image_data, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (user_id, item_type, item_name, description, location, item_date, image_data, lat, lng),
+        (user_id, item_type, item_name, description, location, item_date, compressed_lf_image, lat, lng),
     )
     conn.commit()
     conn.close()
